@@ -11,16 +11,9 @@ import com.whatsapp.engine.messaging.MessageStatus;
 import com.whatsapp.engine.messaging.MessageType;
 import com.whatsapp.engine.messaging.client.MetaWhatsAppClient;
 import com.whatsapp.engine.messaging.client.MetaWhatsAppSendResponse;
-import com.whatsapp.engine.messaging.dto.MessageResponse;
-import com.whatsapp.engine.messaging.dto.SendBulkTextMessageRequest;
-import com.whatsapp.engine.messaging.dto.SendTemplateMessageRequest;
-import com.whatsapp.engine.messaging.dto.SendTextMessageRequest;
+import com.whatsapp.engine.messaging.dto.*;
 import com.whatsapp.engine.messaging.repository.MessageRepository;
 import com.whatsapp.engine.organization.Organization;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -30,6 +23,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 @Slf4j
 @Service
 public class MessagingService {
@@ -38,6 +38,11 @@ public class MessagingService {
     private final ContactRepository contactRepository;
     private final MetaWhatsAppClient metaWhatsAppClient;
     private final ObjectMapper objectMapper;
+
+
+    private final ExecutorService executorService =
+            Executors.newFixedThreadPool(20);
+
 
     public MessagingService(
             MessageRepository messageRepository, ContactRepository contactRepository,
@@ -204,7 +209,7 @@ public class MessagingService {
                 );
                 markSent(savedMessage, metaResponse);
                 log.info(
-                        "Text message sent. messageId={}, organizationId={}, metaMessageId={}",
+                        "Bulk Text message sent. messageId={}, organizationId={}, metaMessageId={}",
                         savedMessage.getId(),
                         organization.getId(),
                         metaResponse.messageId()
@@ -216,5 +221,87 @@ public class MessagingService {
             }
         }
         return responses;
+    }
+
+    public List<MessageResponse> sendBulkTemplateMessage(
+            @Valid SendBulkTemplateMessageRequest request,
+            User user) {
+
+        Organization organization = user.getOrganization();
+        validateWhatsAppConfiguration(organization);
+
+        Pageable pageable = PageRequest.of(0, 1000);
+
+        List<Contact> contacts =
+                contactRepository.findByOrganizationId(
+                                organization.getId(),
+                                pageable)
+                        .getContent();
+
+        List<CompletableFuture<MessageResponse>> futures =
+                contacts.stream()
+                        .map(contact ->
+                                CompletableFuture.supplyAsync(
+                                        () -> processContact(
+                                                contact,
+                                                request,
+                                                user,
+                                                organization),
+                                        executorService))
+                        .toList();
+
+        return futures.stream()
+                .map(CompletableFuture::join)
+                .toList();
+    }
+
+    private MessageResponse processContact(
+            Contact contact,
+            SendBulkTemplateMessageRequest request,
+            User user,
+            Organization organization) {
+
+        List<String> bodyParameters =
+                request.bodyParameters() == null
+                        ? List.of()
+                        : request.bodyParameters();
+
+        Message message = new Message();
+        message.setOrganization(organization);
+        message.setCreatedBy(user);
+        message.setRecipientPhoneNumber(contact.getPhoneNumber());
+        message.setMessageType(MessageType.TEMPLATE);
+        message.setStatus(MessageStatus.PENDING);
+        message.setTemplateName(request.templateName());
+        message.setTemplateLanguage(request.languageCode());
+        message.setTemplateParameters(toJson(bodyParameters));
+
+        Message savedMessage = messageRepository.save(message);
+
+        try {
+            MetaWhatsAppSendResponse response =
+                    metaWhatsAppClient.sendTemplateMessage(
+                            organization.getWhatsappPhoneNumberId(),
+                            organization.getWhatsappAccessToken(),
+                            contact.getPhoneNumber(),
+                            request.templateName(),
+                            request.languageCode(),
+                            bodyParameters);
+
+            markSent(savedMessage, response);
+            log.info(
+                    "Bulk Text message sent. messageId={}, organizationId={}, metaMessageId={}, To Contact Number={}",
+                    savedMessage.getId(),
+                    organization.getId(),
+                    response.messageId(),
+                    contact.getPhoneNumber()
+            );
+            return toResponse(savedMessage);
+
+        } catch (Exception ex) {
+            markFailed(savedMessage, (RuntimeException) ex);
+
+            return toResponse(savedMessage);
+        }
     }
 }

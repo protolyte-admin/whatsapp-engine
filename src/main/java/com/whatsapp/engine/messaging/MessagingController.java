@@ -2,10 +2,7 @@ package com.whatsapp.engine.messaging;
 
 import com.whatsapp.engine.auth.User;
 import com.whatsapp.engine.common.api.ApiResponse;
-import com.whatsapp.engine.messaging.dto.MessageResponse;
-import com.whatsapp.engine.messaging.dto.SendBulkTextMessageRequest;
-import com.whatsapp.engine.messaging.dto.SendTemplateMessageRequest;
-import com.whatsapp.engine.messaging.dto.SendTextMessageRequest;
+import com.whatsapp.engine.messaging.dto.*;
 import com.whatsapp.engine.messaging.service.MessagingService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -55,6 +52,18 @@ public class MessagingController {
         return ResponseEntity.ok(ApiResponse.success(
                 "Template message sent",
                 messagingService.sendTemplateMessage(request, user)
+        ));
+    }
+
+    @PostMapping("/bulk/template")
+    @PreAuthorize("hasAnyRole('ORG_ADMIN', 'AGENT')")
+    public ResponseEntity<ApiResponse<List<MessageResponse>>> sendBulkTemplateMessage(
+            @Valid @RequestBody SendBulkTemplateMessageRequest request,
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Template message sent",
+                messagingService.sendBulkTemplateMessage(request, user)
         ));
     }
 }
