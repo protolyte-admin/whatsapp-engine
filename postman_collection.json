@@ -1,0 +1,182 @@
+{
+  "info": {
+    "name": "WhatsApp Engine API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api/v1"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "contactId",
+      "value": ""
+    },
+    {
+      "key": "campaignId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth - Register",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/auth/register",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"organizationName\": \"Acme Inc\",\n  \"organizationSlug\": \"acme-inc\",\n  \"fullName\": \"Admin User\",\n  \"email\": \"admin@acme.test\",\n  \"password\": \"Password@123\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Auth - Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@acme.test\",\n  \"password\": \"Password@123\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Contacts - Create",
+      "request": {
+        "method": "POST",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{accessToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/contacts",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Customer One\",\n  \"phoneNumber\": \"919999999999\",\n  \"email\": \"customer@example.com\",\n  \"notes\": \"Imported from Postman\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Contacts - List",
+      "request": {
+        "method": "GET",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{accessToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/contacts?page=0&size=20&sort=createdAt,desc"
+      }
+    },
+    {
+      "name": "Messages - Send Text",
+      "request": {
+        "method": "POST",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{accessToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/messages/text",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"to\": \"919999999999\",\n  \"body\": \"Hello from WhatsApp Engine\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Campaigns - Create Text",
+      "request": {
+        "method": "POST",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{accessToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/campaigns",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"May Promo\",\n  \"messageType\": \"TEXT\",\n  \"textBody\": \"Hello from our campaign\",\n  \"contactIds\": [\"{{contactId}}\"]\n}"
+        }
+      }
+    },
+    {
+      "name": "Campaigns - Launch",
+      "request": {
+        "method": "POST",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{accessToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/campaigns/{{campaignId}}/launch"
+      }
+    },
+    {
+      "name": "Meta Webhook - Verify",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/webhooks/meta?hub.mode=subscribe&hub.verify_token=change-this-webhook-token&hub.challenge=test-challenge"
+      }
+    }
+  ]
+}

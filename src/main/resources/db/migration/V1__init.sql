@@ -1,0 +1,2 @@
+-- Initial Flyway migration for the WhatsApp Engine schema.
+-- Domain tables will be introduced with their feature modules.

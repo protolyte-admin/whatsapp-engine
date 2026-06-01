@@ -1,0 +1,21 @@
+spring:
+  jpa:
+    show-sql: false
+
+server:
+  shutdown: graceful
+  tomcat:
+    connection-timeout: 5s
+    threads:
+      max: ${TOMCAT_MAX_THREADS:200}
+      min-spare: ${TOMCAT_MIN_SPARE_THREADS:20}
+
+management:
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  level:
+    root: INFO
+    com.whatsapp.engine: INFO
