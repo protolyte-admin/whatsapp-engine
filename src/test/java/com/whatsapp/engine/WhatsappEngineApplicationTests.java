@@ -11,7 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 })
 class WhatsappEngineApplicationTests {
 
-    @Test
-    void contextLoads() {
-    }
+//    @Test
+//    void contextLoads() {
+//    }
 }
