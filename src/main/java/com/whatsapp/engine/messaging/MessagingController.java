@@ -61,8 +61,7 @@ public class MessagingController {
             @Valid @RequestBody SendBulkTemplateMessageRequest request,
             @AuthenticationPrincipal User user
     ) {
-        return ResponseEntity.ok(ApiResponse.success(
-                "Template message sent",
+        return ResponseEntity.ok(ApiResponse.success("Template message sent",
                 messagingService.sendBulkTemplateMessage(request, user)
         ));
     }
