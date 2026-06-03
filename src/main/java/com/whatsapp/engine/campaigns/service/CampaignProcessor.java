@@ -97,7 +97,7 @@ public class CampaignProcessor {
             MetaWhatsAppSendResponse metaResponse = sendViaMeta(campaign, campaignMessage);
             message.setMetaMessageId(metaResponse.messageId());
             message.setMetaResponse(metaResponse.rawResponse());
-            message.setStatus(MessageStatus.SENT);
+            message.setStatus(MessageStatus.ACCEPTED);
             message.setSentAt(Instant.now());
             messageRepository.save(message);
 
@@ -109,6 +109,7 @@ public class CampaignProcessor {
         } catch (RuntimeException exception) {
             message.setStatus(MessageStatus.FAILED);
             message.setFailureReason(exception.getMessage());
+            message.setFailedAt(Instant.now());
             messageRepository.save(message);
 
             campaignMessage.setMessage(message);
@@ -128,10 +129,12 @@ public class CampaignProcessor {
     private Message buildMessage(Campaign campaign, CampaignMessage campaignMessage) {
         Message message = new Message();
         message.setOrganization(campaign.getOrganization());
+        message.setContact(campaignMessage.getContact());
+        message.setCampaign(campaign);
         message.setRecipientPhoneNumber(campaignMessage.getContact().getPhoneNumber());
         message.setDirection(MessageDirection.OUTBOUND);
         message.setMessageType(campaign.getMessageType());
-        message.setStatus(MessageStatus.PENDING);
+        message.setStatus(MessageStatus.ACCEPTED);
         message.setTextBody(campaign.getTextBody());
         message.setTemplateName(campaign.getTemplateName());
         message.setTemplateLanguage(campaign.getTemplateLanguage());

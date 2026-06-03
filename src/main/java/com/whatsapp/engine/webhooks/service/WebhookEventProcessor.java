@@ -8,6 +8,7 @@ import com.whatsapp.engine.messaging.MessageDirection;
 import com.whatsapp.engine.messaging.MessageStatus;
 import com.whatsapp.engine.messaging.MessageType;
 import com.whatsapp.engine.messaging.repository.MessageRepository;
+import com.whatsapp.engine.messaging.repository.MessageStatusHistoryRepository;
 import com.whatsapp.engine.organization.Organization;
 import com.whatsapp.engine.organization.repository.OrganizationRepository;
 import com.whatsapp.engine.webhooks.WebhookEvent;
@@ -28,17 +29,20 @@ import org.springframework.util.StringUtils;
 public class WebhookEventProcessor {
 
     private final MessageRepository messageRepository;
+    private final MessageStatusHistoryRepository messageStatusHistoryRepository;
     private final ObjectMapper objectMapper;
     private final OrganizationRepository organizationRepository;
     private final WebhookEventRepository webhookEventRepository;
 
     public WebhookEventProcessor(
             MessageRepository messageRepository,
+            MessageStatusHistoryRepository messageStatusHistoryRepository,
             ObjectMapper objectMapper,
             OrganizationRepository organizationRepository,
             WebhookEventRepository webhookEventRepository
     ) {
         this.messageRepository = messageRepository;
+        this.messageStatusHistoryRepository = messageStatusHistoryRepository;
         this.objectMapper = objectMapper;
         this.organizationRepository = organizationRepository;
         this.webhookEventRepository = webhookEventRepository;
@@ -110,7 +114,7 @@ public class WebhookEventProcessor {
             }
 
             messageRepository.findByMetaMessageId(metaMessageId)
-                    .ifPresent(message -> applyStatus(message, status, statusNode));
+                    .ifPresent(message -> applyStatus(message, status, statusNode, event.getRawPayload()));
         }
     }
 
@@ -156,8 +160,15 @@ public class WebhookEventProcessor {
         return organizationRepository.findByWhatsappPhoneNumberId(phoneNumberId);
     }
 
-    private void applyStatus(Message message, String status, JsonNode statusNode) {
+    private void applyStatus(Message message, String status, JsonNode statusNode, String rawPayload) {
         Instant eventTime = parseMetaTimestamp(statusNode.path("timestamp").asText(null));
+        MessageStatus newStatus = resolveStatus(status);
+        if (newStatus == null
+                || message.getStatus() == newStatus) {
+            return;
+        }
+
+        MessageStatus previousStatus = message.getStatus();
         switch (status) {
             case "sent" -> {
                 message.setStatus(MessageStatus.SENT);
@@ -174,10 +185,45 @@ public class WebhookEventProcessor {
             case "failed" -> {
                 message.setStatus(MessageStatus.FAILED);
                 message.setFailureReason(extractFailureReason(statusNode));
+                message.setFailedAt(eventTime);
+            }
+            case "deleted" -> {
+                message.setStatus(MessageStatus.DELETED);
             }
             default -> log.debug("Ignoring unsupported Meta message status={}", status);
         }
         messageRepository.save(message);
+        saveStatusHistory(message, previousStatus, newStatus, rawPayload, eventTime);
+    }
+
+    private MessageStatus resolveStatus(String status) {
+        return switch (status) {
+            case "sent" -> MessageStatus.SENT;
+            case "delivered" -> MessageStatus.DELIVERED;
+            case "read" -> MessageStatus.READ;
+            case "failed" -> MessageStatus.FAILED;
+            case "deleted" -> MessageStatus.DELETED;
+            default -> null;
+        };
+    }
+
+    private void saveStatusHistory(
+            Message message,
+            MessageStatus previousStatus,
+            MessageStatus newStatus,
+            String rawPayload,
+            Instant eventTime
+    ) {
+        messageStatusHistoryRepository.insertStatusHistoryIfAbsent(
+                UUID.randomUUID(),
+                message.getId(),
+                previousStatus == null ? null : previousStatus.name(),
+                newStatus.name(),
+                rawPayload,
+                message.getRecipientPhoneNumber(),
+                eventTime,
+                Instant.now()
+        );
     }
 
     private Instant parseMetaTimestamp(String timestamp) {

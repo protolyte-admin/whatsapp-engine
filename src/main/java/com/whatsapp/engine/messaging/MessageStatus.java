@@ -1,9 +1,10 @@
 package com.whatsapp.engine.messaging;
 
 public enum MessageStatus {
-    PENDING,
+    ACCEPTED,
     SENT,
     DELIVERED,
     READ,
-    FAILED
+    FAILED,
+    DELETED
 }

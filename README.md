@@ -81,8 +81,76 @@ docker compose up --build
 - `GET /campaigns`
 - `GET /campaigns/{id}`
 - `POST /campaigns/{id}/launch`
+- `GET /reports/summary`
+- `GET /reports/messages`
+- `GET /reports/messages/{id}`
+- `GET /reports/status-breakdown`
+- `GET /reports/daily-trend`
+- `GET /reports/export/csv`
+- `GET /reports/export/excel`
 
 All paths are relative to `/api/v1`.
+
+## Message Analytics
+
+Report endpoints support these optional filters:
+
+```text
+dateFrom=2026-06-01T00:00:00Z
+dateTo=2026-06-30T23:59:59Z
+templateName=order_update
+campaignId=<uuid>
+contactId=<uuid>
+status=DELIVERED
+```
+
+Dashboard summary response:
+
+```json
+{
+  "totalSent": 12500,
+  "totalDelivered": 11800,
+  "totalRead": 9400,
+  "totalFailed": 700,
+  "deliveryRate": 94.4,
+  "readRate": 79.66,
+  "failureRate": 5.6,
+  "messagesSentToday": 320,
+  "messagesDeliveredToday": 301,
+  "messagesReadToday": 250
+}
+```
+
+Meta status webhook callbacks are matched by `statuses[].id` against the stored WhatsApp message ID. Duplicate callbacks for the same status and timestamp are ignored.
+
+Sample Meta webhook status payload:
+
+```json
+{
+  "object": "whatsapp_business_account",
+  "entry": [
+    {
+      "changes": [
+        {
+          "field": "messages",
+          "value": {
+            "metadata": {
+              "phone_number_id": "123456789"
+            },
+            "statuses": [
+              {
+                "id": "wamid.HBgM...",
+                "status": "delivered",
+                "timestamp": "1717248000"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
+```
 
 ## Correlation ID
 

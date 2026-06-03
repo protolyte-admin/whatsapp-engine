@@ -64,7 +64,7 @@ public class MessagingService {
         message.setCreatedBy(user);
         message.setRecipientPhoneNumber(request.to());
         message.setMessageType(MessageType.TEXT);
-        message.setStatus(MessageStatus.PENDING);
+        message.setStatus(MessageStatus.ACCEPTED);
         message.setTextBody(request.body());
         Message savedMessage = messageRepository.save(message);
 
@@ -99,7 +99,7 @@ public class MessagingService {
         message.setCreatedBy(user);
         message.setRecipientPhoneNumber(request.to());
         message.setMessageType(MessageType.TEMPLATE);
-        message.setStatus(MessageStatus.PENDING);
+        message.setStatus(MessageStatus.ACCEPTED);
         message.setTemplateName(request.templateName());
         message.setTemplateLanguage(request.languageCode());
         message.setTemplateParameters(toJson(bodyParameters));
@@ -143,7 +143,7 @@ public class MessagingService {
     private void markSent(Message message, MetaWhatsAppSendResponse metaResponse) {
         message.setMetaMessageId(metaResponse.messageId());
         message.setMetaResponse(metaResponse.rawResponse());
-        message.setStatus(MessageStatus.SENT);
+        message.setStatus(MessageStatus.ACCEPTED);
         message.setSentAt(Instant.now());
         messageRepository.save(message);
     }
@@ -151,6 +151,7 @@ public class MessagingService {
     private void markFailed(Message message, RuntimeException exception) {
         message.setStatus(MessageStatus.FAILED);
         message.setFailureReason(exception.getMessage());
+        message.setFailedAt(Instant.now());
         messageRepository.save(message);
         log.warn("Message send failed. messageId={}, reason={}", message.getId(), exception.getMessage());
     }
@@ -194,9 +195,10 @@ public class MessagingService {
             Message message = new Message();
             message.setOrganization(organization);
             message.setCreatedBy(user);
+            message.setContact(contact);
             message.setRecipientPhoneNumber(contact.getPhoneNumber());
             message.setMessageType(MessageType.TEXT);
-            message.setStatus(MessageStatus.PENDING);
+            message.setStatus(MessageStatus.ACCEPTED);
             message.setTextBody(request.body());
             Message savedMessage = messageRepository.save(message);
 
@@ -269,9 +271,10 @@ public class MessagingService {
         Message message = new Message();
         message.setOrganization(organization);
         message.setCreatedBy(user);
+        message.setContact(contact);
         message.setRecipientPhoneNumber(contact.getPhoneNumber());
         message.setMessageType(MessageType.TEMPLATE);
-        message.setStatus(MessageStatus.PENDING);
+        message.setStatus(MessageStatus.ACCEPTED);
         message.setTemplateName(request.templateName());
         message.setTemplateLanguage(request.languageCode());
         message.setTemplateParameters(toJson(bodyParameters));

@@ -1,7 +1,9 @@
 package com.whatsapp.engine.messaging;
 
 import com.whatsapp.engine.auth.User;
+import com.whatsapp.engine.campaigns.Campaign;
 import com.whatsapp.engine.common.entity.BaseEntity;
+import com.whatsapp.engine.contacts.Contact;
 import com.whatsapp.engine.organization.Organization;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -29,6 +31,14 @@ public class Message extends BaseEntity {
     @JoinColumn(name = "created_by_user_id")
     private User createdBy;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "contact_id")
+    private Contact contact;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "campaign_id")
+    private Campaign campaign;
+
     @Column(nullable = false, length = 32)
     private String recipientPhoneNumber;
 
@@ -42,7 +52,7 @@ public class Message extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 40)
-    private MessageStatus status = MessageStatus.PENDING;
+    private MessageStatus status = MessageStatus.ACCEPTED;
 
     @Column(length = 120)
     private String metaMessageId;
@@ -73,4 +83,6 @@ public class Message extends BaseEntity {
     private Instant deliveredAt;
 
     private Instant readAt;
+
+    private Instant failedAt;
 }
