@@ -33,6 +33,9 @@ public class SecurityConfig {
     private final RestAccessDeniedHandler restAccessDeniedHandler;
     private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
 
+    @Value("${app.security.cors.allowed-origins}")
+    private List<String> allowedOrigins;
+
     public SecurityConfig(
             JwtAuthenticationFilter jwtAuthenticationFilter,
             RestAccessDeniedHandler restAccessDeniedHandler,
@@ -88,18 +91,20 @@ public class SecurityConfig {
     }
 
     @Bean
-    public CorsConfigurationSource corsConfigurationSource(
-            @Value("${app.security.cors.allowed-origins}") String allowedOrigins
-    ) {
+    public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(splitCsv(allowedOrigins));
+        configuration.setAllowedOrigins(allowedOrigins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of(
                 HttpHeaders.AUTHORIZATION,
                 HttpHeaders.CONTENT_TYPE,
                 "X-Correlation-ID"
         ));
-        configuration.setExposedHeaders(List.of("X-Correlation-ID", "X-RateLimit-Limit", "X-RateLimit-Remaining"));
+        configuration.setExposedHeaders(List.of(
+                "X-Correlation-ID",
+                "X-RateLimit-Limit",
+                "X-RateLimit-Remaining"
+        ));
         configuration.setAllowCredentials(false);
         configuration.setMaxAge(3600L);
 

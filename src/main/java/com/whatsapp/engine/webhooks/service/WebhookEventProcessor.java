@@ -11,6 +11,8 @@ import com.whatsapp.engine.messaging.repository.MessageRepository;
 import com.whatsapp.engine.messaging.repository.MessageStatusHistoryRepository;
 import com.whatsapp.engine.organization.Organization;
 import com.whatsapp.engine.organization.repository.OrganizationRepository;
+import com.whatsapp.engine.sse.dto.MessageEvent;
+import com.whatsapp.engine.sse.service.EventService;
 import com.whatsapp.engine.webhooks.WebhookEvent;
 import com.whatsapp.engine.webhooks.WebhookEventStatus;
 import com.whatsapp.engine.webhooks.repository.WebhookEventRepository;
@@ -33,19 +35,21 @@ public class WebhookEventProcessor {
     private final ObjectMapper objectMapper;
     private final OrganizationRepository organizationRepository;
     private final WebhookEventRepository webhookEventRepository;
+    private final EventService eventService;
 
     public WebhookEventProcessor(
             MessageRepository messageRepository,
             MessageStatusHistoryRepository messageStatusHistoryRepository,
             ObjectMapper objectMapper,
             OrganizationRepository organizationRepository,
-            WebhookEventRepository webhookEventRepository
+            WebhookEventRepository webhookEventRepository, EventService eventService
     ) {
         this.messageRepository = messageRepository;
         this.messageStatusHistoryRepository = messageStatusHistoryRepository;
         this.objectMapper = objectMapper;
         this.organizationRepository = organizationRepository;
         this.webhookEventRepository = webhookEventRepository;
+        this.eventService = eventService;
     }
 
     @Async
@@ -149,7 +153,23 @@ public class WebhookEventProcessor {
             message.setMetaMessageId(metaMessageId);
             message.setTextBody(extractIncomingText(incomingMessage));
             message.setRawWebhookPayload(event.getRawPayload());
-            messageRepository.save(message);
+            message.setCreatedAt(Instant.now());
+            message.setUpdatedAt(Instant.now());
+            message.setSentAt(Instant.now());
+//            messageRepository.save(message);
+
+            Message savedMessage =
+                    messageRepository.save(message);
+            eventService.publish(
+                    organization.getId(),
+                    new MessageEvent(
+                            savedMessage.getId(),
+                            from,
+                            savedMessage.getTextBody(),
+                            "INBOUND",
+                            Instant.now()
+                    )
+            );
         }
     }
 

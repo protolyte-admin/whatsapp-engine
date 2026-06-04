@@ -8,12 +8,10 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/messages")
@@ -64,5 +62,18 @@ public class MessagingController {
         return ResponseEntity.ok(ApiResponse.success("Template message sent",
                 messagingService.sendBulkTemplateMessage(request, user)
         ));
+    }
+
+    @GetMapping("/conversations")
+    public List<ConversationResponse> getConversations(
+            @AuthenticationPrincipal User user) {
+
+        return messagingService.getConversations(
+                user);
+    }
+
+    @GetMapping("/conversation/{phoneNumber}/messages")
+    public List<ConversationMessageResponse> getMessageList(@PathVariable String phoneNumber, @AuthenticationPrincipal User user) {
+        return messagingService.getMessagesByPhoneNumber(phoneNumber, user);
     }
 }

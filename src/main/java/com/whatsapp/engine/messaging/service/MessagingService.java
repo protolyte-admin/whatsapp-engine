@@ -25,6 +25,7 @@ import org.springframework.util.StringUtils;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -101,6 +102,7 @@ public class MessagingService {
         message.setMessageType(MessageType.TEMPLATE);
         message.setStatus(MessageStatus.ACCEPTED);
         message.setTemplateName(request.templateName());
+        message.setTextBody(request.templateName());
         message.setTemplateLanguage(request.languageCode());
         message.setTemplateParameters(toJson(bodyParameters));
         Message savedMessage = messageRepository.save(message);
@@ -278,7 +280,7 @@ public class MessagingService {
         message.setTemplateName(request.templateName());
         message.setTemplateLanguage(request.languageCode());
         message.setTemplateParameters(toJson(bodyParameters));
-
+        message.setTemplateName(request.templateName());
         Message savedMessage = messageRepository.save(message);
 
         try {
@@ -306,5 +308,47 @@ public class MessagingService {
 
             return toResponse(savedMessage);
         }
+    }
+
+    public List<ConversationResponse> getConversations(User user) {
+
+        return messageRepository
+                .findLatestConversationMessages(
+                        user.getOrganization().getId())
+                .stream()
+                .map(message -> new ConversationResponse(
+                        message.getRecipientPhoneNumber(),
+                        message.getTextBody(),
+                        message.getCreatedAt(),
+                        0L
+                ))
+                .toList();
+    }
+
+    public List<ConversationMessageResponse> getMessagesByPhoneNumber(
+            String phoneNumber,
+            User user) {
+
+        return messageRepository
+                .findAllByRecipientPhoneNumberAndOrganizationIdOrderBySentAtDesc(
+                        phoneNumber,
+                        user.getOrganization().getId())
+                .stream()
+                .map(this::toConversationMessageResponse)
+                .toList();
+    }
+
+    private ConversationMessageResponse toConversationMessageResponse(Message message) {
+
+        return new ConversationMessageResponse(
+                message.getId(),
+                message.getOrganization().getId(),
+                message.getRecipientPhoneNumber(),
+                message.getTextBody(),
+                message.getMessageType(),
+                message.getStatus(),
+                message.getMetaMessageId(),
+                message.getSentAt()
+        );
     }
 }

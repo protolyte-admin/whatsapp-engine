@@ -74,7 +74,7 @@ app:
       webhook-verify-token: ${META_WHATSAPP_WEBHOOK_VERIFY_TOKEN:change-this-webhook-token}
   security:
     cors:
-      allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+      allowed-origins: https://metalyte-ui.web.app,http://localhost:5173,http://localhost:3000
     jwt:
       issuer: ${JWT_ISSUER:protolyte-whatsapp-engine}
       secret: ${JWT_SECRET:change-this-development-secret-change-in-production}

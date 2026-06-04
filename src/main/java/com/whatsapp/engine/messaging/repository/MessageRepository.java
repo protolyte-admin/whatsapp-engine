@@ -18,6 +18,25 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
 
     Optional<Message> findByIdAndOrganizationId(UUID id, UUID organizationId);
 
+    List<Message> findAllByOrganizationId(UUID organizationId);
+
+    List<Message> findAllByRecipientPhoneNumberAndOrganizationIdOrderBySentAtDesc(String recipientPhoneNumber, UUID organizationId);
+
+    @Query("""
+            select message
+            from Message message
+            where message.organization.id = :organizationId
+            and message.createdAt = (
+                select max(m2.createdAt)
+                from Message m2
+                where m2.organization.id = :organizationId
+                    and m2.recipientPhoneNumber = message.recipientPhoneNumber
+               )
+                order by message.createdAt desc
+            """)
+    List<Message> findLatestConversationMessages(
+            @Param("organizationId") UUID organizationId);
+
     @Query("""
             select message
             from Message message
