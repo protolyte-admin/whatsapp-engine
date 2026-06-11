@@ -330,7 +330,7 @@ public class MessagingService {
             User user) {
 
         return messageRepository
-                .findAllByRecipientPhoneNumberAndOrganizationIdOrderBySentAtDesc(
+                .findAllByRecipientPhoneNumberAndOrganizationIdOrderBySentAtAsc(
                         phoneNumber,
                         user.getOrganization().getId())
                 .stream()
@@ -348,7 +348,8 @@ public class MessagingService {
                 message.getMessageType(),
                 message.getStatus(),
                 message.getMetaMessageId(),
-                message.getSentAt()
+                message.getSentAt(),
+                message.getDirection().toString()
         );
     }
 }

@@ -15,6 +15,7 @@ public record ConversationMessageResponse(
         MessageType messageType,
         MessageStatus status,
         String metaMessageId,
-        Instant sentAt
+        Instant sentAt,
+        String direction
 ) {
 }

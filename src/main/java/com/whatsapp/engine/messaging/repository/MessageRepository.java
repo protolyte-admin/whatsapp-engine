@@ -20,7 +20,7 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
 
     List<Message> findAllByOrganizationId(UUID organizationId);
 
-    List<Message> findAllByRecipientPhoneNumberAndOrganizationIdOrderBySentAtDesc(String recipientPhoneNumber, UUID organizationId);
+    List<Message> findAllByRecipientPhoneNumberAndOrganizationIdOrderBySentAtAsc(String recipientPhoneNumber, UUID organizationId);
 
     @Query("""
             select message

@@ -34,7 +34,9 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 public class ContactService {
 
-    private static final Pattern PHONE_PATTERN = Pattern.compile("^[1-9][0-9]{7,14}$");
+    private static final Pattern PHONE_PATTERN = Pattern.compile("^91[6-9]\\d{9}$");
+
+    private static final String COUNTRY_CODE = "91";
 
     private final ContactRepository contactRepository;
 
@@ -162,30 +164,54 @@ public class ContactService {
         String phoneNumber = normalizePhoneNumber(getValue(row, headers, "phoneNumber"));
         String email = getOptionalValue(row, headers, "email");
         String notes = getOptionalValue(row, headers, "notes");
+        log.info("Upserting contact for phone {}", phoneNumber);
 
         if (!StringUtils.hasText(name)) {
             throw new IllegalArgumentException("Name is required");
         }
+
+        // Convert 10-digit Indian numbers to E.164 format without +
+        if (phoneNumber.length() == 10) {
+            phoneNumber = COUNTRY_CODE + phoneNumber; // COUNTRY_CODE = "91"
+        }
+
+        // Validate after normalization
         if (!PHONE_PATTERN.matcher(phoneNumber).matches()) {
-            throw new IllegalArgumentException("Phone number must be in E.164 format without +");
+            throw new IllegalArgumentException(
+                    "Phone number must be in E.164 format without + (e.g. 919876543210)");
+        }
+
+        // Check duplicates within the uploaded CSV
+        if (!seenPhoneNumbers.add(phoneNumber)) {
+            throw new IllegalArgumentException("Duplicate phone number in CSV file");
         }
 
         Contact contact = contactRepository
-                .findByOrganizationIdAndPhoneNumber(organization.getId(), phoneNumber)
+                .findByOrganizationIdAndPhoneNumber(
+                        organization.getId(),
+                        phoneNumber)
                 .orElseGet(Contact::new);
+
         boolean isNew = contact.getId() == null;
-        if (isNew && !seenPhoneNumbers.add(phoneNumber)) {
-            throw new IllegalArgumentException("Duplicate phone number in CSV file");
-        }
+
         contact.setOrganization(organization);
         contact.setName(name.trim());
         contact.setPhoneNumber(phoneNumber);
-        contact.setEmail(StringUtils.hasText(email) ? email.trim().toLowerCase(Locale.ROOT) : null);
-        contact.setNotes(StringUtils.hasText(notes) ? notes.trim() : null);
+        contact.setEmail(
+                StringUtils.hasText(email)
+                        ? email.trim().toLowerCase(Locale.ROOT)
+                        : null);
+        contact.setNotes(
+                StringUtils.hasText(notes)
+                        ? notes.trim()
+                        : null);
         contact.setActive(true);
+
         contactRepository.save(contact);
+
         return isNew;
     }
+
 
     private Contact findTenantContact(UUID id, UUID organizationId) {
         return contactRepository.findByIdAndOrganizationId(id, organizationId)
