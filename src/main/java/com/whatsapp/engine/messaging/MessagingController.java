@@ -56,11 +56,12 @@ public class MessagingController {
     @PostMapping("/bulk/template")
     @PreAuthorize("hasAnyRole('ORG_ADMIN', 'AGENT')")
     public ResponseEntity<ApiResponse<List<MessageResponse>>> sendBulkTemplateMessage(
-            @Valid @RequestBody SendBulkTemplateMessageRequest request,
+            @Valid @RequestBody SendBulkTemplateMessageRequest request, @RequestParam int pageNumber,
+                    @RequestParam int pageSize ,
             @AuthenticationPrincipal User user
     ) {
         return ResponseEntity.ok(ApiResponse.success("Template message sent",
-                messagingService.sendBulkTemplateMessage(request, user)
+                messagingService.sendBulkTemplateMessage(request, user, pageNumber, pageSize)
         ));
     }
 

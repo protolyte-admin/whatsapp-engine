@@ -58,35 +58,35 @@ public class ReportService {
     }
 
     @Transactional(readOnly = true)
-    public MessageSummaryResponse getSummary(UUID organizationId, MessageReportFilter filter) {
-        Object[] metrics = messageRepository.getSummaryMetrics(
-                organizationId,
-                filter.dateFrom(),
-                filter.dateTo(),
-                filter.templateName(),
-                filter.campaignId(),
-                filter.contactId(),
-                filter.status(),
-                LocalDate.now(ZoneOffset.UTC).atStartOfDay().toInstant(ZoneOffset.UTC)
-        );
+    public MessageSummaryResponse getSummary(
+            UUID organizationId,
+            MessageReportFilter filter
+    ) {
 
-        long totalMessages = number(metrics, 0);
-        long totalSent = number(metrics, 1);
-        long totalDelivered = number(metrics, 2);
-        long totalRead = number(metrics, 3);
-        long totalFailed = number(metrics, 4);
+        SummaryMetrics summary =
+                messageRepository.getDashboardSummary(
+                        organizationId,
+                        filter
+                );
 
         return new MessageSummaryResponse(
-                totalSent,
-                totalDelivered,
-                totalRead,
-                totalFailed,
-                rate(totalDelivered, totalSent),
-                rate(totalRead, totalDelivered),
-                rate(totalFailed, totalMessages),
-                number(metrics, 5),
-                number(metrics, 6),
-                number(metrics, 7)
+                summary.totalSent(),
+                summary.totalDelivered(),
+                summary.totalRead(),
+                summary.totalFailed(),
+
+                rate(summary.totalDelivered(),
+                        summary.totalSent()),
+
+                rate(summary.totalRead(),
+                        summary.totalDelivered()),
+
+                rate(summary.totalFailed(),
+                        summary.totalMessages()),
+
+                summary.messagesSentToday(),
+                summary.messagesDeliveredToday(),
+                summary.messagesReadToday()
         );
     }
 

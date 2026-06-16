@@ -2,6 +2,7 @@ package com.whatsapp.engine.messaging.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.util.concurrent.RateLimiter;
 import com.whatsapp.engine.auth.User;
 import com.whatsapp.engine.common.exception.ApplicationException;
 import com.whatsapp.engine.contacts.Contact;
@@ -39,6 +40,8 @@ public class MessagingService {
     private final ContactRepository contactRepository;
     private final MetaWhatsAppClient metaWhatsAppClient;
     private final ObjectMapper objectMapper;
+    private final RateLimiter rateLimiter = RateLimiter.create(3.0);
+
 
 
     private final ExecutorService executorService =
@@ -108,6 +111,7 @@ public class MessagingService {
         Message savedMessage = messageRepository.save(message);
 
         try {
+            rateLimiter.acquire();
             MetaWhatsAppSendResponse metaResponse = metaWhatsAppClient.sendTemplateMessage(
                     organization.getWhatsappPhoneNumberId(),
                     organization.getWhatsappAccessToken(),
@@ -229,12 +233,12 @@ public class MessagingService {
 
     public List<MessageResponse> sendBulkTemplateMessage(
             @Valid SendBulkTemplateMessageRequest request,
-            User user) {
+            User user, int pageNumber, int pageSize) {
 
         Organization organization = user.getOrganization();
         validateWhatsAppConfiguration(organization);
 
-        Pageable pageable = PageRequest.of(0, 1000);
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
 
         List<Contact> contacts =
                 contactRepository.findByOrganizationId(

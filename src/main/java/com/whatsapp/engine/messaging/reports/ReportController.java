@@ -61,7 +61,7 @@ public class ReportController {
     ) {
         return ResponseEntity.ok(ApiResponse.success(
                 "Message report fetched",
-                reportService.getMessages(user.getOrganization().getId(), query.toFilter(), pageable)
+                    reportService.getMessages(user.getOrganization().getId(), query.toFilter(), pageable)
         ));
     }
 
