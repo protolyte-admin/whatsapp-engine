@@ -4,9 +4,10 @@ spring:
   config:
     import: optional:file:.env[.properties]
   datasource:
-    url: jdbc:postgresql://ep-polished-bird-abf8n5px-pooler.eu-west-2.aws.neon.tech/whatsapp-engine?user=neondb_owner&password=npg_8cySMrfDQkq5&sslmode=require&channelBinding=require
+#    url: jdbc:postgresql://ep-polished-bird-abf8n5px-pooler.eu-west-2.aws.neon.tech/whatsapp-engine?user=neondb_owner&password=npg_8cySMrfDQkq5&sslmode=require&channelBinding=require
+    url: jdbc:postgresql://ep-red-sunset-acy76dkc-pooler.sa-east-1.aws.neon.tech/whatsapp-engine?user=neondb_owner&password=npg_vpfSJk7LIHr6&sslmode=require&channelBinding=require
     username: neondb_owner
-    password: npg_8cySMrfDQkq5
+    password: npg_vpfSJk7LIHr6
     driver-class-name: org.postgresql.Driver
   servlet:
     multipart:
