@@ -284,7 +284,6 @@ public class MessagingService {
         message.setTemplateName(request.templateName());
         message.setTemplateLanguage(request.languageCode());
         message.setTemplateParameters(toJson(bodyParameters));
-        message.setTemplateName(request.templateName());
         Message savedMessage = messageRepository.save(message);
 
         try {
